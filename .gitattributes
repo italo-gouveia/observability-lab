@@ -1,0 +1,8 @@
+# Normalize line endings to LF for config, scripts and source.
+* text=auto eol=lf
+*.go text eol=lf
+*.mod text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+Dockerfile text eol=lf
