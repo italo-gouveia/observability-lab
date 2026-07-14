@@ -1,0 +1,127 @@
+# Observability Lab — Roadmap Board
+
+Tracking board for the learnable-journey levels. Each level is a self-contained,
+runnable milestone. Check items off as they land; move epics across the board below.
+
+Legend: `[x]` done · `[~]` in progress · `[ ]` todo
+
+---
+
+## Board
+
+| ✅ Done | 🔜 Next | 🧭 Backlog |
+|--------|---------|-----------|
+| **N0 — Core** | **N0.5 — Polyglot** | N1 · N2 · N3 · N4 · N5 · N6 · Portfolio/VPS |
+
+---
+
+## ✅ N0 — Core (shipped)
+
+The OTLP foundation: one Go service, three signals, three backends, one Grafana.
+
+- [x] `docker compose` bringing up the full stack (6 services)
+- [x] OTel Collector: OTLP in → Prometheus / Tempo / Loki fan-out
+- [x] Instrumented Go demo (traces + metrics + logs) with self-load
+- [x] Prometheus scrape + remote-write receiver (Tempo metrics-generator)
+- [x] Tempo: traces + span-metrics + service graph
+- [x] Loki: native OTLP ingest
+- [x] Grafana: provisioned correlated datasources + N0 overview dashboard
+- [x] Datadog agent wired as optional exporter
+- [x] README documenting the journey + run instructions
+- [x] Published: public repo, topics, linked in profile Featured Projects
+
+---
+
+## 🔜 N0.5 — Polyglot (next)
+
+Prove **cross-language** OTel: a request threading Go → Java → Python shows up as a
+single distributed trace in Tempo, with a service graph in Grafana.
+
+- [ ] Java/Spring service instrumented with OTel (SDK + Micrometer bridge)
+- [ ] Python/FastAPI service with OTel auto-instrumentation
+- [ ] Service-to-service calls (Go → Java → Python) with context propagation
+- [ ] Verify one end-to-end distributed trace across all three languages
+- [ ] Service graph rendered in Grafana (node graph)
+- [ ] Update compose + README + architecture diagram
+- [ ] Screenshot of the cross-language trace for the README
+
+---
+
+## 🧭 N1 — Tracing & alerting
+
+- [ ] AlertManager + alerting rules (error rate, latency SLO burn)
+- [ ] PagerDuty **or** OpsGenie route (or a webhook stub for demo)
+- [ ] Blackbox exporter (uptime/probe checks on the demo endpoints)
+- [ ] Jaeger **or** Zipkin as an alternative trace UI
+- [ ] Dashboard: alert status + probe availability
+
+---
+
+## 🧭 N2 — Distributed system
+
+- [ ] Kafka **or** Redpanda + a producer/consumer path in the demo
+- [ ] RabbitMQ path (compare messaging models)
+- [ ] Redis (cache) with exporter
+- [ ] Postgres with `postgres_exporter`
+- [ ] resilience4j (or equivalent) circuit breaker — **watch it open in Grafana**
+- [ ] Dashboards: consumer lag, queue depth, cache hit ratio, breaker state
+
+---
+
+## 🧭 N3 — Logs & data
+
+- [ ] Elastic Stack + Kibana (alongside/against Loki)
+- [ ] Vector as a log/metric pipeline
+- [ ] Neo4j: build a **service dependency graph** from trace data
+- [ ] Dashboard/notebook exploring the dependency graph
+
+---
+
+## 🧭 N4 — Kubernetes & SRE
+
+- [ ] k3s cluster (local or VPS)
+- [ ] kube-state-metrics + node-exporter + cAdvisor
+- [ ] Helm chart for the whole stack
+- [ ] Sloth: SLOs + error budgets generated as Prometheus rules
+- [ ] OpenCost: cost visibility
+- [ ] SRE dashboard: SLO burn-down + golden signals
+
+---
+
+## 🧭 N5 — Advanced
+
+- [ ] Service mesh (Istio **or** Linkerd) with mesh telemetry
+- [ ] eBPF auto-instrumentation (Grafana Beyla **or** Pixie)
+- [ ] Continuous profiling (Pyroscope)
+- [ ] Chaos engineering (Toxiproxy **or** Chaos Mesh) + resilience experiments
+- [ ] Dashboard: profiles + fault-injection experiment results
+
+---
+
+## 🧭 N6 — GitOps & IaC
+
+- [ ] Terraform: provision VPS / DNS / Cloudflare
+- [ ] Ansible: host bootstrap + config
+- [ ] ArgoCD: GitOps sync of the stack
+- [ ] Vault: secrets (DD_API_KEY, Grafana admin, etc.)
+- [ ] Keycloak: OAuth2/OIDC login on Grafana
+
+---
+
+## 🌐 Portfolio / VPS (cross-cutting)
+
+- [ ] Deploy the lab to a VPS subdomain
+- [ ] Public **read-only** Grafana with a curated dashboard
+- [ ] Status page (Uptime Kuma or equivalent)
+- [ ] CI: lint + build + `docker compose config` validation on PRs
+- [ ] README screenshots (dashboard, distributed trace, service graph)
+- [ ] Live-demo badge/link in the repo + profile README
+
+---
+
+### How this maps to the profile
+
+Each shipped level retires "orphan" badges on the profile README (badges with no repo
+to back them). Rough coverage: **N0** → OTel, Prometheus, Grafana, Tempo, Loki, Docker ·
+**N2** → Kafka, RabbitMQ, Redis, resilience patterns · **N3** → ELK, Neo4j ·
+**N4** → Kubernetes, Helm, SLO/SRE · **N6** → Terraform, Ansible, ArgoCD, Vault, OIDC.

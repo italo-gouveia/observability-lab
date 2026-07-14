@@ -75,6 +75,9 @@ Then add a `datadog` exporter to `otel-collector/config.yaml` and uncomment the
 Planned: extend the demo into a **polyglot** trio (Go + Java + Python) to showcase
 OpenTelemetry's cross-language story.
 
+Progress is tracked as a board in **[ROADMAP.md](ROADMAP.md)** — per-level checklists
+for everything above.
+
 ---
 
 ## Layout
