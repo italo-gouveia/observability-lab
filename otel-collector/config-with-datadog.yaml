@@ -1,0 +1,53 @@
+# Same pipeline as config.yaml, plus a Datadog exporter on every signal.
+# Enabled only via the opt-in overlay (see docker-compose.datadog.yml) so the
+# default `docker compose up` never needs a Datadog account.
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch: {}
+  resourcedetection:
+    detectors: [env, system]
+    override: false
+
+exporters:
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    resource_to_telemetry_conversion:
+      enabled: true
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+  # Same OTLP telemetry, fanned out to a commercial backend — no app changes.
+  datadog:
+    api:
+      key: ${env:DD_API_KEY}
+      site: ${env:DD_SITE}
+  debug:
+    verbosity: basic
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [resourcedetection, batch]
+      exporters: [otlp/tempo, datadog, debug]
+    metrics:
+      receivers: [otlp]
+      processors: [resourcedetection, batch]
+      exporters: [prometheus, datadog, debug]
+    logs:
+      receivers: [otlp]
+      processors: [resourcedetection, batch]
+      exporters: [otlphttp/loki, datadog, debug]
+  telemetry:
+    metrics:
+      address: 0.0.0.0:8888

@@ -1,0 +1,15 @@
+# Opt-in overlay that adds a Datadog destination to the OTel Collector.
+#
+#   cp .env.example .env        # then set DD_API_KEY (and DD_SITE if not US1)
+#   docker compose -f docker-compose.yml -f docker-compose.datadog.yml up --build
+#
+# The default `docker compose up` (without this file) never touches Datadog and
+# needs no account.
+services:
+  otel-collector:
+    command: ["--config=/etc/otel/config-datadog.yaml"]
+    volumes:
+      - ./otel-collector/config-with-datadog.yaml:/etc/otel/config-datadog.yaml:ro
+    environment:
+      DD_API_KEY: ${DD_API_KEY:?set DD_API_KEY in .env to use the Datadog overlay}
+      DD_SITE: ${DD_SITE:-datadoghq.com}

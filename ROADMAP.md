@@ -26,7 +26,7 @@ The OTLP foundation: one Go service, three signals, three backends, one Grafana.
 - [x] Tempo: traces + span-metrics + service graph
 - [x] Loki: native OTLP ingest
 - [x] Grafana: provisioned correlated datasources + N0 overview dashboard
-- [x] Datadog agent wired as optional exporter
+- [x] Datadog wired as an opt-in collector exporter (overlay, no app change)
 - [x] README documenting the journey + run instructions
 - [x] Published: public repo, topics, linked in profile Featured Projects
 

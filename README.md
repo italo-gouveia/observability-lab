@@ -63,14 +63,19 @@ logs in Loki (correlation is provisioned).
 
 ### Optional: Datadog
 
-Prove the same OTLP telemetry reaches a commercial backend with zero app changes:
+The same OTLP telemetry can fan out to a **commercial backend** with zero app
+changes — the collector just gains one more exporter. This is **opt-in** so the
+default stack needs no Datadog account:
 
 ```bash
-cp .env.example .env   # set DD_API_KEY
+cp .env.example .env    # set DD_API_KEY (and DD_SITE if you're not on US1)
+docker compose -f docker-compose.yml -f docker-compose.datadog.yml up --build
 ```
 
-Then add a `datadog` exporter to `otel-collector/config.yaml` and uncomment the
-`datadog-agent` service in `docker-compose.yml`.
+The overlay swaps the collector to [`config-with-datadog.yaml`](otel-collector/config-with-datadog.yaml),
+which adds a `datadog` exporter to the traces, metrics and logs pipelines alongside
+Tempo/Prometheus/Loki. Traces then appear in Datadog **APM** and metrics under
+`demo_*`. Your key stays in `.env` (git-ignored) — never committed.
 
 ---
 
