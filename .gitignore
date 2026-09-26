@@ -1,5 +1,8 @@
 .env
 *.log
-apps/go-demo/go.sum
 apps/*/bin/
 .DS_Store
+
+# compiled binaries
+apps/go-demo/go-demo
+apps/*/*-demo

@@ -1,5 +1,8 @@
 # Observability Lab
 
+[![CI](https://github.com/italo-gouveia/observability-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/italo-gouveia/observability-lab/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 A self-hosted, Docker-based observability platform built as a **learnable journey**.
 Each level is a self-contained, runnable milestone — stop at any one and you already
 have a strong project. The foundation is **OpenTelemetry**: a single instrumentation
@@ -17,12 +20,17 @@ A minimal Go service emits **traces, metrics, and logs** over OTLP to an OpenTel
 Collector, which routes each signal to its backend. Grafana ships pre-provisioned with
 all three datasources wired together (trace ↔ log ↔ metric correlation).
 
-```
-                         ┌──────────────► Prometheus  (metrics)
- go-demo ──OTLP──► OTel Collector ───────► Tempo       (traces)
- (Go SDK)                 └──────────────► Loki        (logs)
-                                                  │
- (optional) Datadog agent ◄── same OTLP ──┘   Grafana (single pane of glass)
+```mermaid
+flowchart LR
+    app["go-demo<br/>(Go OTel SDK)"] -- OTLP --> otc["OpenTelemetry<br/>Collector"]
+    otc -- metrics --> prom["Prometheus"]
+    otc -- traces --> tempo["Tempo"]
+    otc -- logs --> loki["Loki"]
+    otc -. "same OTLP<br/>(optional)" .-> dd["Datadog agent"]
+    tempo -- "span metrics<br/>(remote_write)" --> prom
+    prom --> graf["Grafana<br/>(single pane of glass)"]
+    tempo --> graf
+    loki --> graf
 ```
 
 The app drives itself with synthetic load, so dashboards populate on boot — no manual
@@ -35,13 +43,19 @@ spans, written back to Prometheus.
 docker compose up --build
 ```
 
-| UI / endpoint     | URL                              | Notes                                  |
-|-------------------|----------------------------------|----------------------------------------|
-| Grafana           | http://localhost:3000            | Anonymous admin; dashboard auto-loaded |
-| Prometheus        | http://localhost:9090            | Targets under Status → Targets         |
-| Tempo             | http://localhost:3200            | Query via Grafana Explore (TraceQL)    |
-| Loki              | http://localhost:3100            | Query via Grafana Explore (LogQL)      |
-| Demo app          | http://localhost:8080/work       | Manual request; `/healthz` for probe   |
+| Service    | Has a web UI? | Where to open it                                                        |
+|------------|---------------|------------------------------------------------------------------------|
+| Grafana    | ✅ yes        | http://localhost:3000 — anonymous admin; the N0 dashboard auto-loads   |
+| Prometheus | ✅ yes        | http://localhost:9090 — targets under **Status → Targets**             |
+| Demo app   | — (endpoints) | http://localhost:8080/work (manual hit) · `/healthz` (probe)           |
+| Tempo      | ❌ no UI      | traces backend — **query via Grafana → Explore → Tempo** (TraceQL)     |
+| Loki       | ❌ no UI      | logs backend — **query via Grafana → Explore → Loki** (LogQL)          |
+
+> **Tempo and Loki have no homepage.** Opening `http://localhost:3200` or `:3100`
+> directly returns **404** — that is expected. They are API backends you query
+> *through Grafana*, not websites. To check they are up, hit their health endpoints
+> instead: `curl http://localhost:3100/ready` and `curl http://localhost:3200/ready`
+> (both return `ready` once warmed up, ~15s after start).
 
 Open **Grafana → Dashboards → "Observability Lab — N0 Overview"** for request rate,
 p95 span latency, and live logs. In **Explore**, jump from a Tempo trace straight to its
