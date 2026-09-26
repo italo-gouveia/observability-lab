@@ -79,6 +79,23 @@ Tempo/Prometheus/Loki. Traces then appear in Datadog **APM** and metrics under
 
 ---
 
+## Screenshots
+
+**N0 overview dashboard** — request rate (200s vs the ~10% synthetic 500s), p95 span
+latency derived from traces by Tempo's metrics-generator, log volume and live logs, all
+on a single pane:
+
+![N0 overview dashboard](docs/dashboard.webp)
+
+**Traces in Tempo** — every `/work` request captured end to end (Grafana → Explore → Tempo):
+
+![Traces in Tempo](docs/traces.webp)
+
+**Logs in Loki** — structured logs carrying OpenTelemetry resource labels
+(`service_name`, `severity_text`, `deployment_environment`), correlated back to traces:
+
+![Logs in Loki](docs/logs.webp)
+
 ## The journey
 
 | Level | Theme              | Adds                                                                 |
