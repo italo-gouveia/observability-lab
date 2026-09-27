@@ -109,6 +109,19 @@ on a single pane:
 
 ![Logs in Loki](docs/logs.webp)
 
+### Polyglot (N0.5)
+
+**Service graph** — Tempo builds this from the spans: a `/work` request flows
+`user → go-demo → java-orders → python-pricing` across three languages, with per-node
+response time, request rate and the red arc showing the ~8% injected failures:
+
+![Polyglot service graph](docs/polyglot-service-graph.webp)
+
+**RED metrics per service** — rate, error rate and p90 duration derived from the same
+spans, one row per endpoint across the chain:
+
+![Polyglot RED metrics](docs/polyglot-red-metrics.webp)
+
 ## The journey
 
 | Level | Theme              | Adds                                                                 |
