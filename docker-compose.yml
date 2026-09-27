@@ -8,8 +8,40 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
       OTEL_SERVICE_NAME: go-demo
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=observability-lab,deployment.environment=local
+      ORDERS_URL: http://java-orders:8081
     ports:
       - "8080:8080"
+    depends_on:
+      - otel-collector
+      - java-orders
+
+  java-orders:
+    build: ./apps/java-orders
+    container_name: java-orders
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_SERVICE_NAME: java-orders
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=observability-lab,deployment.environment=local
+      OTEL_LOGS_EXPORTER: otlp
+      PRICING_URL: http://python-pricing:8082
+    ports:
+      - "8081:8081"
+    depends_on:
+      - otel-collector
+      - python-pricing
+
+  python-pricing:
+    build: ./apps/python-pricing
+    container_name: python-pricing
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_SERVICE_NAME: python-pricing
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=observability-lab,deployment.environment=local
+      OTEL_LOGS_EXPORTER: otlp
+    ports:
+      - "8082:8082"
     depends_on:
       - otel-collector
 

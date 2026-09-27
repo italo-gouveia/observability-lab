@@ -25,9 +25,10 @@ func TestWorkReturnsHandledStatusWithBody(t *testing.T) {
 	rec := httptest.NewRecorder()
 	srv.Handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/work", nil))
 
-	// The handler injects a ~10% synthetic error, so either outcome is valid.
-	if rec.Code != http.StatusOK && rec.Code != http.StatusInternalServerError {
-		t.Fatalf("work: got %d, want 200 or 500", rec.Code)
+	// No java-orders in a unit test, so the downstream call fails and the handler
+	// maps it to 502. With a reachable downstream it would be 200.
+	if rec.Code != http.StatusOK && rec.Code != http.StatusBadGateway {
+		t.Fatalf("work: got %d, want 200 or 502", rec.Code)
 	}
 	if rec.Body.Len() == 0 {
 		t.Fatal("work: expected a non-empty body")

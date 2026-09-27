@@ -14,28 +14,39 @@ touching application code.
 
 ---
 
-## N0 — Core (current)
+## N0 — Core & polyglot (current)
 
-A minimal Go service emits **traces, metrics, and logs** over OTLP to an OpenTelemetry
-Collector, which routes each signal to its backend. Grafana ships pre-provisioned with
-all three datasources wired together (trace ↔ log ↔ metric correlation).
+Three services in **three languages** — Go, Java and Python — form a request chain and
+each emits **traces, metrics, and logs** over OTLP to an OpenTelemetry Collector, which
+routes every signal to its backend. Grafana ships pre-provisioned with all three
+datasources wired together (trace ↔ log ↔ metric correlation).
 
 ```mermaid
 flowchart LR
-    app["go-demo<br/>(Go OTel SDK)"] -- OTLP --> otc["OpenTelemetry<br/>Collector"]
+    subgraph chain["request chain — one distributed trace"]
+      go["go-demo<br/>(Go · SDK)"] -- HTTP --> java["java-orders<br/>(Spring · agent)"]
+      java -- HTTP --> py["python-pricing<br/>(FastAPI · distro)"]
+    end
+    go -- OTLP --> otc["OpenTelemetry<br/>Collector"]
+    java -- OTLP --> otc
+    py -- OTLP --> otc
     otc -- metrics --> prom["Prometheus"]
     otc -- traces --> tempo["Tempo"]
     otc -- logs --> loki["Loki"]
-    otc -. "same OTLP<br/>(optional)" .-> dd["Datadog agent"]
-    tempo -- "span metrics<br/>(remote_write)" --> prom
-    prom --> graf["Grafana<br/>(single pane of glass)"]
+    otc -. "same OTLP<br/>(opt-in)" .-> dd["Datadog"]
+    tempo -- "span + service-graph<br/>metrics (remote_write)" --> prom
+    prom --> graf["Grafana"]
     tempo --> graf
     loki --> graf
 ```
 
-The app drives itself with synthetic load, so dashboards populate on boot — no manual
-`curl` needed. Tempo's metrics-generator derives RED metrics and service graphs from the
-spans, written back to Prometheus.
+**Why polyglot:** a single `/work` request flows `go-demo → java-orders → python-pricing`
+and shows up as **one trace spanning all three languages** in Tempo, proving OpenTelemetry's
+cross-language context propagation (W3C `traceparent`). Go uses the OTel SDK; Java is
+auto-instrumented by the **OTel Java agent**; Python by the **opentelemetry-distro** — none
+of them share code. go-demo drives itself with synthetic load (with ~8% injected failures
+that surface as error traces across all three), so dashboards and the service graph populate
+on boot. Tempo's metrics-generator derives RED metrics and the service graph from the spans.
 
 ### Run it
 
@@ -43,13 +54,15 @@ spans, written back to Prometheus.
 docker compose up --build
 ```
 
-| Service    | Has a web UI? | Where to open it                                                        |
-|------------|---------------|------------------------------------------------------------------------|
-| Grafana    | ✅ yes        | http://localhost:3000 — anonymous admin; the N0 dashboard auto-loads   |
-| Prometheus | ✅ yes        | http://localhost:9090 — targets under **Status → Targets**             |
-| Demo app   | — (endpoints) | http://localhost:8080/work (manual hit) · `/healthz` (probe)           |
-| Tempo      | ❌ no UI      | traces backend — **query via Grafana → Explore → Tempo** (TraceQL)     |
-| Loki       | ❌ no UI      | logs backend — **query via Grafana → Explore → Loki** (LogQL)          |
+| Service        | Has a web UI? | Where to open it                                                     |
+|----------------|---------------|---------------------------------------------------------------------|
+| Grafana        | ✅ yes        | http://localhost:3000 — anonymous admin; the N0 dashboard auto-loads |
+| Prometheus     | ✅ yes        | http://localhost:9090 — targets under **Status → Targets**           |
+| go-demo (edge) | — (endpoints) | http://localhost:8080/work drives the chain · `/healthz`             |
+| java-orders    | — (endpoints) | http://localhost:8081/orders · `/healthz`                           |
+| python-pricing | — (endpoints) | http://localhost:8082/price · `/healthz`                           |
+| Tempo          | ❌ no UI      | traces backend — **query via Grafana → Explore → Tempo** (TraceQL)   |
+| Loki           | ❌ no UI      | logs backend — **query via Grafana → Explore → Loki** (LogQL)        |
 
 > **Tempo and Loki have no homepage.** Opening `http://localhost:3200` or `:3100`
 > directly returns **404** — that is expected. They are API backends you query

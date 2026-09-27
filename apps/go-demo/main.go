@@ -7,8 +7,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
-	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
@@ -24,11 +24,11 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/log/global"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/propagation"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/trace"
 )
 
 const serviceName = "go-demo"
@@ -73,11 +73,18 @@ func newServer(logger *slog.Logger) *http.Server {
 		"demo.requests",
 		metric.WithDescription("Total demo requests handled"),
 	)
-	tracer := otel.Tracer(serviceName)
+
+	ordersURL := getenv("ORDERS_URL", "http://java-orders:8081")
+	// otelhttp transport injects the W3C traceparent so the trace continues
+	// into java-orders (and on to python-pricing).
+	ordersClient := &http.Client{
+		Timeout:   5 * time.Second,
+		Transport: otelhttp.NewTransport(http.DefaultTransport),
+	}
 
 	mux := http.NewServeMux()
 	mux.Handle("/work", otelhttp.NewHandler(
-		http.HandlerFunc(workHandler(tracer, requests, logger)), "work",
+		http.HandlerFunc(workHandler(ordersClient, ordersURL, requests, logger)), "work",
 	))
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -86,17 +93,12 @@ func newServer(logger *slog.Logger) *http.Server {
 	return &http.Server{Addr: ":8080", Handler: mux}
 }
 
-func workHandler(tracer trace.Tracer, requests metric.Int64Counter, logger *slog.Logger) http.HandlerFunc {
+func workHandler(orders *http.Client, ordersURL string, requests metric.Int64Counter, logger *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := tracer.Start(r.Context(), "process-work")
-		defer span.End()
+		ctx := r.Context() // otelhttp already opened the "work" server span
 
-		simulateWork(ctx, tracer)
+		status := callOrders(ctx, orders, ordersURL, logger)
 
-		status := http.StatusOK
-		if rand.Float64() < 0.1 {
-			status = http.StatusInternalServerError
-		}
 		requests.Add(ctx, 1, metric.WithAttributes(
 			attribute.String("route", "/work"),
 			attribute.Int("status", status),
@@ -107,10 +109,31 @@ func workHandler(tracer trace.Tracer, requests metric.Int64Counter, logger *slog
 	}
 }
 
-func simulateWork(ctx context.Context, tracer trace.Tracer) {
-	_, span := tracer.Start(ctx, "downstream-call")
-	defer span.End()
-	time.Sleep(time.Duration(20+rand.Intn(180)) * time.Millisecond)
+// callOrders calls java-orders and maps the outcome to a status code. A downstream
+// failure surfaces as 502 so error traces span all three services.
+func callOrders(ctx context.Context, client *http.Client, baseURL string, logger *slog.Logger) int {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/orders", nil)
+	if err != nil {
+		return http.StatusInternalServerError
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		logger.WarnContext(ctx, "orders call failed", "error", err)
+		return http.StatusBadGateway
+	}
+	defer resp.Body.Close()
+	_, _ = io.Copy(io.Discard, resp.Body)
+	if resp.StatusCode >= 500 {
+		return http.StatusBadGateway
+	}
+	return http.StatusOK
+}
+
+func getenv(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
 }
 
 func generateLoad(ctx context.Context, logger *slog.Logger) {
@@ -150,6 +173,10 @@ func setupOTel(ctx context.Context) (func(context.Context) error, error) {
 		sdktrace.WithResource(res),
 	)
 	otel.SetTracerProvider(tracerProvider)
+	// W3C propagation so outbound calls carry the trace to java-orders/python-pricing.
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
+		propagation.TraceContext{}, propagation.Baggage{},
+	))
 
 	metricExp, err := otlpmetricgrpc.New(ctx)
 	if err != nil {
