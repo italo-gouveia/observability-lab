@@ -144,6 +144,17 @@ spans, one row per endpoint across the chain:
 
 ![Polyglot RED metrics](docs/polyglot-red-metrics.webp)
 
+### Alerting & uptime (N1)
+
+**N1 dashboard** — endpoint uptime (blackbox probes), firing alerts, edge error ratio
+and probe latency on one pane:
+
+![N1 alerting & uptime dashboard](docs/n1-dashboard.png)
+
+**Jaeger** — the same OTLP traces as Tempo, in Jaeger's timeline UI:
+
+![Distributed trace in Jaeger](docs/n1-jaeger-trace.png)
+
 ## The journey
 
 | Level | Theme              | Adds                                                                 |
