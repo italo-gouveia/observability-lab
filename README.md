@@ -58,6 +58,8 @@ docker compose up --build
 |----------------|---------------|---------------------------------------------------------------------|
 | Grafana        | ✅ yes        | http://localhost:3000 — anonymous admin; the N0 dashboard auto-loads |
 | Prometheus     | ✅ yes        | http://localhost:9090 — targets under **Status → Targets**           |
+| Jaeger         | ✅ yes        | http://localhost:16686 — same traces as Tempo, alternative UI (N1)    |
+| AlertManager   | ✅ yes        | http://localhost:9093 — firing alerts (N1)                            |
 | go-demo (edge) | — (endpoints) | http://localhost:8080/work drives the chain · `/healthz`             |
 | java-orders    | — (endpoints) | http://localhost:8081/orders · `/healthz`                           |
 | python-pricing | — (endpoints) | http://localhost:8082/price · `/healthz`                           |
@@ -91,6 +93,26 @@ Tempo/Prometheus/Loki. Traces then appear in Datadog **APM** and metrics under
 `demo_*`. Your key stays in `.env` (git-ignored) — never committed.
 
 ---
+
+## Alerting & uptime (N1)
+
+Prometheus evaluates [alert rules](prometheus/alerts.yml) (high error rate, high p95
+latency, target down, health-probe failing) and routes firing alerts to **AlertManager**,
+which forwards them to a small **alertsink** webhook that logs each one — a stand-in for
+PagerDuty / OpsGenie / Slack (swap the URL in [alertmanager/config.yml](alertmanager/config.yml)).
+A **blackbox exporter** probes every service's `/healthz` for uptime, and **Jaeger**
+receives the same OTLP traces as Tempo for an alternative trace UI.
+
+Open **Grafana → Dashboards → "N1 Alerting & Uptime"** for probe status, firing alerts,
+error ratio and probe latency.
+
+**See an alert fire end to end:**
+
+```bash
+docker compose stop python-pricing        # break the chain
+docker compose logs -f alertsink          # watch [FIRING] arrive (~1 min)
+docker compose start python-pricing       # recover -> [RESOLVED]
+```
 
 ## Screenshots
 
@@ -126,16 +148,16 @@ spans, one row per endpoint across the chain:
 
 | Level | Theme              | Adds                                                                 |
 |-------|--------------------|----------------------------------------------------------------------|
-| **N0** | Core              | OTel Collector · Prometheus · Grafana · Loki · Tempo · (Datadog)     |
-| N1     | Tracing & alerting | Jaeger/Zipkin · AlertManager + PagerDuty/OpsGenie · Blackbox exporter |
+| **N0** ✅ | Core & polyglot | OTel Collector · Prometheus · Grafana · Loki · Tempo · (Datadog) · Go+Java+Python |
+| **N1** ✅ | Tracing & alerting | Jaeger · AlertManager + webhook · Blackbox exporter · alert rules |
 | N2     | Distributed system | Kafka/Redpanda · RabbitMQ · Redis · Postgres exporters · resilience4j |
 | N3     | Logs & data        | Elastic/Kibana · Vector · Neo4j (service dependency graph)            |
 | N4     | K8s & SRE          | k3s · kube-state-metrics/node-exporter/cAdvisor · Helm · Sloth (SLOs) |
 | N5     | Advanced           | Service mesh (Istio/Linkerd) · eBPF (Beyla) · Pyroscope · chaos eng.  |
 | N6     | GitOps & IaC       | Terraform · Ansible · ArgoCD · Vault · Keycloak (OIDC on Grafana)     |
 
-Planned: extend the demo into a **polyglot** trio (Go + Java + Python) to showcase
-OpenTelemetry's cross-language story.
+N0 already runs the **polyglot** trio (Go + Java + Python), and N1 adds alerting and
+uptime. N2 onward is the roadmap.
 
 Progress is tracked as a board in **[ROADMAP.md](ROADMAP.md)** — per-level checklists
 for everything above.

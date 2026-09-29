@@ -24,6 +24,10 @@ exporters:
     endpoint: tempo:4317
     tls:
       insecure: true
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
   otlphttp/loki:
     endpoint: http://loki:3100/otlp
   # Same OTLP telemetry, fanned out to a commercial backend — no app changes.
@@ -39,7 +43,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [resourcedetection, batch]
-      exporters: [otlp/tempo, datadog, debug]
+      exporters: [otlp/tempo, otlp/jaeger, datadog, debug]
     metrics:
       receivers: [otlp]
       processors: [resourcedetection, batch]

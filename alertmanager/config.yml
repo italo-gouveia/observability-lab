@@ -1,0 +1,14 @@
+route:
+  receiver: webhook
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 30s
+  repeat_interval: 1h
+
+receivers:
+  - name: webhook
+    webhook_configs:
+      # A local sink that logs each alert — stands in for PagerDuty/OpsGenie/Slack,
+      # which need an external account. Swap this URL for a real integration.
+      - url: http://alertsink:5001/alert
+        send_resolved: true

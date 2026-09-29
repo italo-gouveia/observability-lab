@@ -23,6 +23,11 @@ exporters:
     endpoint: tempo:4317
     tls:
       insecure: true
+  # Same traces -> Jaeger (alternative trace UI).
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
   # Logs -> Loki native OTLP endpoint.
   otlphttp/loki:
     endpoint: http://loki:3100/otlp
@@ -34,7 +39,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [resourcedetection, batch]
-      exporters: [otlp/tempo, debug]
+      exporters: [otlp/tempo, otlp/jaeger, debug]
     metrics:
       receivers: [otlp]
       processors: [resourcedetection, batch]

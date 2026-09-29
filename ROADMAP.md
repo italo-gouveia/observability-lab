@@ -48,13 +48,14 @@ single distributed trace in Tempo, with a service graph in Grafana.
 
 ---
 
-## 🧭 N1 — Tracing & alerting
+## ✅ N1 — Tracing & alerting (shipped)
 
-- [ ] AlertManager + alerting rules (error rate, latency SLO burn)
-- [ ] PagerDuty **or** OpsGenie route (or a webhook stub for demo)
-- [ ] Blackbox exporter (uptime/probe checks on the demo endpoints)
-- [ ] Jaeger **or** Zipkin as an alternative trace UI
-- [ ] Dashboard: alert status + probe availability
+- [x] Prometheus alerting rules (error rate, p95 latency, target down, probe down)
+- [x] AlertManager routing to a webhook stub (alertsink) — swap for PagerDuty/OpsGenie/Slack
+- [x] Blackbox exporter probing each service's `/healthz`
+- [x] Jaeger as an alternative trace UI (same OTLP traces as Tempo)
+- [x] Grafana dashboard: uptime, firing alerts, error ratio, probe latency
+- [x] Verified end to end: stopping python-pricing fires alerts through to the sink
 
 ---
 

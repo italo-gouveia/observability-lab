@@ -1,0 +1,45 @@
+groups:
+  - name: observability-lab
+    rules:
+      # Error ratio on the edge service above 20% for 1 minute.
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(demo_requests_total{status=~"5.."}[5m]))
+            / sum(rate(demo_requests_total[5m])) > 0.2
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "go-demo error ratio above 20%"
+          description: "The edge service is returning 5xx for more than 20% of requests."
+
+      # p95 span latency across the chain above 300ms.
+      - alert: HighSpanLatencyP95
+        expr: |
+          histogram_quantile(0.95, sum by (le) (rate(traces_spanmetrics_latency_bucket[5m]))) > 0.3
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "p95 span latency above 300ms"
+          description: "95th percentile span latency has been over 300ms for 2 minutes."
+
+      # Any Prometheus scrape target down.
+      - alert: TargetDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Prometheus target down: {{ $labels.job }}"
+          description: "{{ $labels.job }} ({{ $labels.instance }}) has been unreachable for 1 minute."
+
+      # A service /healthz probe is failing (blackbox).
+      - alert: EndpointProbeFailing
+        expr: probe_success == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Health probe failing: {{ $labels.instance }}"
+          description: "Blackbox probe to {{ $labels.instance }} has failed for 1 minute."
