@@ -114,6 +114,13 @@ docker compose logs -f alertsink          # watch [FIRING] arrive (~1 min)
 docker compose start python-pricing       # recover -> [RESOLVED]
 ```
 
+> **Note on the AlertManager UI (`:9093`).** Its web UI is an Elm app whose virtual-DOM
+> can crash (blank page, `Cannot read properties of undefined (reading 'childNodes')`) when
+> a **browser extension** (MetaMask, Grammarly, translators, …) mutates the page. If it
+> renders blank, open it in a **clean/incognito profile with extensions disabled**. The
+> service itself is unaffected — routing works regardless (the alertsink logs prove it), and
+> **Prometheus `/alerts`** (`:9090`, React UI) is a robust alternative for viewing firing rules.
+
 ## Screenshots
 
 **N0 overview dashboard** — request rate (200s vs the ~10% synthetic 500s), p95 span
@@ -150,6 +157,17 @@ spans, one row per endpoint across the chain:
 and probe latency on one pane:
 
 ![N1 alerting & uptime dashboard](docs/n1-dashboard.png)
+
+**Firing alerts** — stopping `python-pricing` trips three rules at once
+(`EndpointProbeFailing`, `HighErrorRate`, `HighSpanLatencyP95`). Prometheus evaluates
+the rules and shows the expression, `for` window and severity:
+
+![Firing alerts in Prometheus](docs/n1-prometheus-alerts.jpg)
+
+**AlertManager** — the same firing alerts routed and grouped by receiver (the `webhook`
+that feeds the alertsink), each with its `instance` / `job` / `severity` labels:
+
+![Firing alerts in AlertManager](docs/n1-alertmanager.jpg)
 
 **Jaeger** — the same OTLP traces as Tempo, in Jaeger's timeline UI:
 
